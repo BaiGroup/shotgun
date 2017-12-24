@@ -1,0 +1,18 @@
+SERVER: http://localhost
+TOKEN: ${token}
+VAULT: ${home_dir}/shotgun.sqlite
+targets:
+  host1:
+    scheduler: pbs
+    cpus_per_node: 24
+    queue: default
+    skip_pingback: False
+    host: host1.dept.univ.edu
+  host2:
+    scheduler: slurm
+    cpus_per_node: 48
+    queue: batch
+    skip_pingback: True  # disables ping back.
+                         # Ping back requires a running server
+    # host: if absent, host defaults to target name (e.g., host2)
+    #       Target name should then be set up in ~/.ssh/config

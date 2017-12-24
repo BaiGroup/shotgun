@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE plist PUBLIC "-//Apple/DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>shotgun.server.plist</string>
+  <key>Program</key>
+  <string>/Users/pengbai/tools/conda/envs/conda3.6/bin/flask</string>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>FLASK_APP</key>
+    <string>shotgun.server</string>
+    <key>LANG</key>
+    <string>en_US.UTF-8</string>
+  </dict>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/pengbai/tools/conda/envs/conda3.6/bin/flask</string>
+    <string>run</string>
+    <string>--host</string>
+    <string>0.0.0.0</string>
+    <string>--port</string>
+    <string>8080</string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>StandardErrorPath</key>
+  <string>/Users/pengbai/shotgun.server</string>
+  <key>StandardOutPath</key>
+  <string>/Users/pengbai/shotgun.server</string>
+</dict>
+</plist>
