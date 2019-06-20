@@ -53,7 +53,10 @@ def parse_query_output(stdout):
 
     info['job_state'] = _QUERY_STATE_MAP[info['job_state']]
     if info['job_state'] == 'queued':
-        info['job_state'] = _QUERY_REASON_MAP[info['note']]
+        try:
+            info['job_state'] = _QUERY_REASON_MAP[info['note']]
+        except KeyError:
+            pass
 
     return info
 
