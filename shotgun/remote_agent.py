@@ -2,18 +2,80 @@
 
 from __future__ import print_function, unicode_literals
 from future.utils import iteritems
-from fabric import Connection
 import importlib
 from invoke.exceptions import UnexpectedExit
 import logging
+import queue
 import shlex
 from shotgun import APP_NAME
 from shotgun.util import failable, is_number, is_sequence_except_str
 import subprocess
+import sys
+import threading
 
 
 _logger = logging.getLogger(APP_NAME)
 _logger.addHandler(logging.NullHandler())
+
+
+def enqueue_output(fd, queue, output=True):
+    for line in iter(fd.readline, b''):
+        l = line.decode(sys.stdout.encoding)
+        queue.put(l)
+        if output:
+            print(l, end='')
+    fd.close()
+
+
+class Connection(object):
+    '''A replacement for fabric.Connection based on external SSH client.'''
+
+    def __init__(self, host):
+        self.host = host
+
+    def close(self):
+        pass
+
+    def run(self, cmd, hide=None):
+        ssh_cmd = "ssh {} '{}'".format(self.host, cmd)
+        res = subprocess.Popen(shlex.split(ssh_cmd), stdout=subprocess.PIPE,
+                               stderr=subprocess.PIPE)
+
+        prints = [True, True]
+        if hide == 'out':
+            prints = [False, True]
+        elif hide == 'err':
+            prints = [True, False]
+        elif hide == 'both' or hide == True:
+            prints = [False, False]
+        elif hide is not None and hide != False:
+            _logger.warning('hide=%s is not valid', str(hide))
+
+        fds = [res.stdout, res.stderr]
+        queues = []
+        for fd, p in zip(fds, prints):
+            q = queue.Queue()
+            queues.append(q)
+            t = threading.Thread(target=enqueue_output, args=(fd, q, p))
+            t.daemon = True
+            t.start()
+
+        res.wait()
+        output = []
+        for q in queues:
+            o = []
+            while True:
+                try:
+                    line = q.get(block=False)
+                    o.append(line)
+                except queue.Empty:
+                    break
+            output.append(''.join(o))
+
+        res.stdout = output[0]
+        res.stderr = output[1]
+        res.ok = res.returncode == 0
+        return res
 
 
 class RemoteAgent(object):

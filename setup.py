@@ -15,7 +15,6 @@ if __name__ == '__main__':
         description='Shotgun',
         long_description=__doc__,
         install_requires=[
-            'Fabric >= 2.0',
             'future',
             'invoke',
             'ruamel.yaml',
