@@ -5,10 +5,12 @@ from future.utils import iteritems
 import importlib
 from invoke.exceptions import UnexpectedExit
 import logging
+import math
 import queue
 import shlex
 from shotgun import APP_NAME
-from shotgun.util import failable, is_number, is_sequence_except_str
+from shotgun.util import failable, is_number, is_sequence_except_str,\
+    time_in_seconds
 import subprocess
 import sys
 import threading
@@ -144,7 +146,12 @@ class RemoteAgent(object):
 
     @failable(UnexpectedExit)
     def submit(self, job_dir, **kwargs):
-        cmd = self.sched.submit_command(**self.with_submit_defaults(**kwargs))
+        kwargs = self.with_submit_defaults(**kwargs)
+        seconds = time_in_seconds(kwargs['time'])
+        hours = int(seconds/3600)
+        minutes = math.ceil((seconds - hours*3600)/60)
+        kwargs['time'] = '{:d}:{:02d}'.format(hours, minutes)
+        cmd = self.sched.submit_command(**kwargs)
         print('{} Submitting: {}'.format(str(self), cmd))
         result = self.conn.run('cd {} && {}'.format(job_dir, cmd))
         if result is not None and result.ok:
@@ -183,9 +190,8 @@ class RemoteAgent(object):
     def with_submit_defaults(self, **kwargs):
         for key, val in iteritems(kwargs):
             try:
-                if val is None:
-                    kwargs[key] = self.attr[key]
-                elif is_number(val) and val < 0:
+                if (val is None) or (is_number(val) and val < 0) \
+                   or (isinstance(val, str) and len(val) == 0):
                     kwargs[key] = self.attr[key]
             except KeyError:
                 pass

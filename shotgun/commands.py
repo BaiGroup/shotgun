@@ -398,7 +398,7 @@ class ShotgunConfig(Config):
 
 @task(iterable=['targets'])
 def submit(ctx, job_script=None, nodes=-1, cpus_per_node=-1,
-           mem_per_cpu=None, mem_total=None, time=-1,
+           mem_per_cpu=None, mem_total=None, time=None,
            queue=None, account=None, name=None, targets=[], constraint=None):
     job_root = load_job_root_config(ctx)
 

@@ -93,7 +93,7 @@ def submit_command(job_script, nodes=1, cpus_per_node=1,
     if constraint is not None:
         options += ' -R "{}"'.format(constraint)
 
-    cmd = ('bsub -R "span[ptile={}]" -n {} -W {}:00 -J {}{} {}'
+    cmd = ('bsub -R "span[ptile={}]" -n {} -W {} -J {}{} {}'
            .format(cpus_per_node, nodes*cpus_per_node, time, name, options,
                    job_script))
 

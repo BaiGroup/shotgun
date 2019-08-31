@@ -90,7 +90,7 @@ def submit_command(job_script, nodes=1, cpus_per_node=1,
     if constraint is not None:
         options += ' -l {}'.format(constraint)
 
-    cmd = ('qsub -l nodes={}:ppn={},walltime={}:00:00 -N {}{} {}'
+    cmd = ('qsub -l nodes={}:ppn={},walltime={}:00 -N {}{} {}'
            .format(nodes, cpus_per_node, time, name, options, job_script))
 
     return cmd
