@@ -4,6 +4,7 @@ from functools import wraps
 import logging
 from numbers import Number
 import os
+import stat
 from shotgun import APP_NAME
 from string import Template
 
@@ -45,6 +46,17 @@ def is_sequence_except_str(obj):
         return False
     else:
         return isinstance(obj, collections.Sequence)
+
+
+def make_executable(f):
+    mode = os.stat(f).st_mode
+    if mode & stat.S_IRUSR:
+        mode = mode | stat.S_IXUSR
+    if mode & stat.S_IRGRP:
+        mode = mode | stat.S_IXGRP
+    if mode & stat.S_IROTH:
+        mode = mode | stat.S_IXOTH
+    os.chmod(f, mode)
 
 
 def template_file(filename):

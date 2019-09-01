@@ -6,14 +6,38 @@ from invoke import Collection, Context, Program, task
 from invoke.config import Config, merge_dicts
 import logging
 import os
+from string import Template
+import sys
 from shotgun import APP_NAME, APP_VERSION
 from shotgun.config import find_job_root_config, read_config, user_config_file
-from shotgun.util import (generate_token, template_file, template_from_file)
-import sys
+from shotgun.util import (generate_token, make_executable,
+                          template_file, template_from_file)
 
 
 _logger = logging.getLogger(APP_NAME)
 _logger.addHandler(logging.NullHandler())
+
+
+@task
+def bundle(ctx, job_template=None, dirs=None, output=None):
+    with open(job_template) as f:
+        job_script = f.read()
+
+    dir_begin = job_script.find('#>>>BEGIN<<<')
+    dir_end = job_script.find('#>>>END<<<', dir_begin)
+    lines = job_script[dir_begin:dir_end].splitlines(keepends=True)
+    template = Template(''.join(lines[1:]))
+
+    with open(output, 'w') as f:
+        f.write(job_script[:dir_begin])
+        f.write(lines[0])
+
+        for d in open(dirs):
+            f.write(template.safe_substitute(job_dir=os.path.relpath(d.strip())))
+
+        f.write(job_script[dir_end:])
+
+    make_executable(output)
 
 
 @task
