@@ -30,7 +30,8 @@ _QUERY_STATE_MAP = {
     'PENDING': 'queued',
     'RUNNING': 'running',
     'COMPLETED': 'completed',
-    'CANCELLED': 'canceled'
+    'CANCELLED': 'canceled',
+    'TIMEOUT': 'killed'
 }
 _QUERY_REASON_MAP = {
     'None': 'running|completed',
@@ -38,7 +39,8 @@ _QUERY_REASON_MAP = {
     'Priority': 'queued',
     'Dependency': 'dependency_hold',
     'JobHeldUser': 'user_hold',
-    'QOSMaxJobsPerUserLimit': 'system_hold'
+    'QOSMaxJobsPerUserLimit': 'system_hold',
+    'TimeLimit': 'killed'
 }
 
 
