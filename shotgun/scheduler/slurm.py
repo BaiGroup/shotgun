@@ -104,7 +104,7 @@ def submit_command(job_script, nodes=1, cpus_per_node=1,
     if constraint is not None:
         options += ' --constraint="{}"'.format(constraint)
 
-    cmd = ('sbatch --nodes={} --ntasks-per-node=1 --cpus-per-task={}'
+    cmd = ('sbatch --nodes={} --ntasks-per-node={} --cpus-per-task=1'
            ' --time={}:00 --job-name {}{} {}'
            .format(nodes, cpus_per_node, time, name, options, job_script))
 
