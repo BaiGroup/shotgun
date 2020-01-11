@@ -436,7 +436,7 @@ def submit(ctx, job_script=None, nodes=-1, cpus_per_node=-1,
     jobid = db.add_job(job_dir, db=ctx.VAULT)
 
     if name is None:
-        name = os.path.basename(job_dir)
+        name = '_'.join(rel_job_dir.split('/')[::-1])
 
     from shotgun.job_logger import Job
     curjob = Job(ctx, job_dir, jobid)
