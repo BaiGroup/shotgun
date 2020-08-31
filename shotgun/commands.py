@@ -7,6 +7,7 @@ from invoke import Collection, Context, Program, task
 from invoke.config import Config, merge_dicts
 import logging
 import os
+from pathlib import PurePath
 from string import Template
 import sys
 from shotgun import APP_NAME, APP_VERSION
@@ -474,10 +475,22 @@ class ShotgunConfig(Config):
         return merge_dicts(base_defaults, shotgun_defaults)
 
 
-@task(iterable=['targets'])
+@task(iterable=['targets'],
+      help={
+          'job-script': 'batch script to submit to the queuing system. Needs '
+          'to reside in the job directory or the local asset directory. If '
+          'given as a relative path, it is with respect to the job directory.',
+      })
 def submit(ctx, job_script=None, nodes=-1, cpus_per_node=-1,
            mem_per_cpu=None, mem_total=None, time=None,
            queue=None, account=None, name=None, targets=[], constraint=None):
+    '''Submit a job to one or more remote queuing systems.
+
+    Options specified on the command line override defaults from global
+    `~/.shotgun.yaml` or project `shotgun.yaml` files.
+
+    '''
+
     job_root = load_job_root_config(ctx)
 
     if len(targets) == 0:
@@ -485,6 +498,12 @@ def submit(ctx, job_script=None, nodes=-1, cpus_per_node=-1,
 
     job_dir = os.getcwd()
     rel_job_dir = os.path.relpath(job_dir, job_root)
+
+    job_script = os.path.relpath(job_script, job_dir)
+    job_script_path = PurePath(job_script)
+    if not (job_script_path.parts[0] == '..'
+            or job_script_path.parts[0] == '.'):
+        job_script = os.path.join('.', job_script)
 
     import shotgun.database as db
     jobid = db.add_job(job_dir, db=ctx.VAULT)
