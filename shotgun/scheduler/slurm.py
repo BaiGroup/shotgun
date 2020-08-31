@@ -2,6 +2,7 @@
 
 from __future__ import unicode_literals
 from future.utils import listvalues
+from shotgun.exception import ShotgunError
 from shotgun.util import ints_to_str_list, time_in_seconds
 
 
@@ -53,7 +54,11 @@ def parse_query_output(stdout):
                 value = time_in_seconds(value)
             info[_QUERY_MAP[key]] = value
 
-    info['job_state'] = _QUERY_STATE_MAP[info['job_state']]
+    try:
+        info['job_state'] = _QUERY_STATE_MAP[info['job_state']]
+    except KeyError as e:
+        raise SlurmParseQueryError('STDOUT: {}'.format(stdout)) from e
+
     if info['job_state'] == 'queued':
         try:
             info['job_state'] = _QUERY_REASON_MAP[info['note']]
@@ -80,6 +85,10 @@ def release_command(job_qids):
     qid_list = ints_to_str_list(job_qids)
     cmd = 'scontrol release {}'.format(','.join(qid_list))
     return cmd
+
+
+class SlurmParseQueryError(ShotgunError):
+    pass
 
 
 def submit_command(job_script, nodes=1, cpus_per_node=1,

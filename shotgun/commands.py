@@ -10,6 +10,7 @@ import os
 from pathlib import PurePath
 from string import Template
 import sys
+import traceback
 from shotgun import APP_NAME, APP_VERSION
 from shotgun.config import find_job_root_config, read_config, user_config_file
 from shotgun.util import (generate_token, make_executable,
@@ -54,9 +55,10 @@ def cancel_job(ctx, target=None, job_dir=None):
     'quick': 'check only jobs that have started.',
     'targets': 'check only specified targets.',
     'j': 'how many jobs to check in parallel. Default is 3.',
+    'retry': 'how many times to retry before giving up. Default is 2.'
 })
 def check_all(ctx, cancel=False, sync=False, project=False, quick=False,
-              targets=[], j=3):
+              targets=[], j=3, retry=2):
     '''Checks the status of all submitted jobs; can be run anywhere.'''
 
     if project:
@@ -72,19 +74,39 @@ def check_all(ctx, cancel=False, sync=False, project=False, quick=False,
     import shotgun.database as db
     jobs = db.find_jobs(ctx.VAULT, active=True, project=project,
                         started=started)
+    check_all_parallel(ctx, jobs=jobs, cancel=cancel, sync=sync,
+                       targets=targets, max_workers=j, retry=retry)
 
+
+def check_all_parallel(ctx, jobs, cancel=False, sync=False, targets=[],
+                       max_workers=1, retry=0):
     from concurrent.futures import wait, ThreadPoolExecutor
 
     futures = []
-    with ThreadPoolExecutor(max_workers=j) as executor:
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
         for job in jobs:
             futures.append(
                 executor.submit(check_this, ctx, job_dir=job.jobdir,
                                 targets=targets, cancel=cancel, sync=sync))
+
+    failed_jobs = []
     for f, job in zip(futures, jobs):
-        res = f.result()
-        if res is not None:
-            print('({}) {}'.format(job.jobdir, res))
+        try:
+            res = f.result()
+        except:
+            failed_jobs.append(job)
+            print('****{} encountered an error: {}****\n{}'.
+                  format(job.jobdir, sys.exc_info()[0], traceback.format_exc()))
+        else:
+            if res is not None:
+                print('({}) {}'.format(job.jobdir, res))
+
+    if len(failed_jobs) > 0 and retry > 0:
+        print('Some jobs failed. Retrying ... (remaining retries: {})'.
+              format(retry-1))
+        check_all_parallel(ctx, jobs=failed_jobs, cancel=cancel, sync=sync,
+                           targets=targets, max_workers=max_workers,
+                           retry=retry-1)
 
 
 @task(help={

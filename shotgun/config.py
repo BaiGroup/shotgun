@@ -11,7 +11,7 @@ def find_job_root_config(filename=APP_NAME+'.yaml'):
         if os.path.isfile(root_config):
             break
         elif curdir == '/':
-            raise RuntimeError('Config file not found: ' + filename)
+            raise FileNotFoundError('Config file not found: ' + filename)
         else:
             curdir = os.path.normpath(os.path.join(curdir, '..'))
     return root_config

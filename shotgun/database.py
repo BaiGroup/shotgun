@@ -107,17 +107,9 @@ def get_session_instance(db):
     return session, ins
 
 
-@contextmanager
 def session_from_db(db):
     session, ins = get_session_instance(db)
-    try:
-        yield session
-        session.commit()
-    except Exception as ex:
-        session.rollback()
-        raise ex
-    finally:
-        session.close()
+    return session_guard(session)
 
 
 @contextmanager
