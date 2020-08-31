@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from __future__ import print_function, unicode_literals
+from builtins import zip
 from future.utils import iteritems, listitems
 from invoke import Collection, Context, Program, task
 from invoke.config import Config, merge_dicts
@@ -45,26 +46,55 @@ def cancel_job(ctx, target=None, job_dir=None):
     qid_action(ctx, 'cancel', target_name=target, job_dir=job_dir)
 
 
-@task
-def check_all(ctx, cancel=False, sync=False, quick=False, j=3):
+@task(help={
+    'cancel': 'cancels all jobs except the first one running.',
+    'sync': 'downloads the files.',
+    'project': 'check jobs belonging to the project of the working directory.',
+    'quick': 'check only jobs that have started.',
+    'targets': 'check only specified targets.',
+    'j': 'how many jobs to check in parallel. Default is 3.',
+})
+def check_all(ctx, cancel=False, sync=False, project=False, quick=False,
+              targets=[], j=3):
+    '''Checks the status of all submitted jobs; can be run anywhere.'''
+
+    if project:
+        project = find_job_root()
+    else:
+        project = None
+
     if quick:
         started = True
     else:
         started = None
 
     import shotgun.database as db
-    jobs = db.find_jobs(ctx.VAULT, active=True, started=started)
+    jobs = db.find_jobs(ctx.VAULT, active=True, project=project,
+                        started=started)
 
-    from concurrent.futures import ThreadPoolExecutor
+    from concurrent.futures import wait, ThreadPoolExecutor
 
+    futures = []
     with ThreadPoolExecutor(max_workers=j) as executor:
         for job in jobs:
-            executor.submit(check_this, ctx, job_dir=job.jobdir,
-                            cancel=cancel, sync=sync)
+            futures.append(
+                executor.submit(check_this, ctx, job_dir=job.jobdir,
+                                targets=targets, cancel=cancel, sync=sync))
+    for f, job in zip(futures, jobs):
+        res = f.result()
+        if res is not None:
+            print('({}) {}'.format(job.jobdir, res))
 
 
-@task
-def check_this(ctx, job_dir=None, cancel=False, sync=False):
+@task(help={
+    'job-dir': 'Default is current working directory.',
+    'targets': 'check only specified targets.',
+    'cancel': 'cancels all jobs except the first one running.',
+    'sync': 'downloads the files.',
+})
+def check_this(ctx, job_dir=None, targets=[], cancel=False, sync=False):
+    '''Checks the job in the current directory.'''
+
     if job_dir is None:
         job_dir = os.getcwd()
 
@@ -74,6 +104,15 @@ def check_this(ctx, job_dir=None, cancel=False, sync=False):
     from shotgun.job_logger import Job
     curjob = Job(ctx, job_dir=job_dir)
 
+    if len(targets) == 0:
+        targets = curjob.active_targets
+    else:
+        targets_tmp = {}
+        for tname, tinfo in iteritems(curjob.targets):
+            if tname in targets:
+                targets_tmp[tname] = tinfo
+        targets = targets_tmp
+
     max_runtime = -1
     max_runtime_target_name = None
     active_jobs = {}
@@ -81,7 +120,7 @@ def check_this(ctx, job_dir=None, cancel=False, sync=False):
 
     from shotgun.remote_agent import RemoteAgent
 
-    for tname, tinfo in iteritems(curjob.active_targets):
+    for tname, tinfo in iteritems(targets):
         if max_runtime_target_name is None:
             max_runtime_target_name = tname
 
@@ -93,9 +132,10 @@ def check_this(ctx, job_dir=None, cancel=False, sync=False):
             curjob.set_exited(tname)
             continue
 
-        fmtstr = ('[{}] JobId={}, qid={}/{}, queue={}, '
+        fmtstr = ('[{}] JobId={} ({}), qid={}/{}, queue={}, '
                   'job_state={}, run_time={}, time_limit={}')
-        print(fmtstr.format(tname, curjob.config['jobid'], tinfo['job_qid'],
+        print(fmtstr.format(tname, curjob.config['jobid'], job_dir,
+                            tinfo['job_qid'],
                             res.job_qid, res.queue, res.job_state,
                             res.run_time, res.time_limit))
         curjob.set_job_state(tname, res.job_state)
@@ -141,6 +181,11 @@ def download(ctx, target=None, job_dir=None):
     tagent = RemoteAgent(ctx, target, target_attr)
     tagent.sync_from_remote(job_dir, target_job_dir,
                             exclude=ctx.download_excludes)
+
+
+def find_job_root():
+    cfg_file = find_job_root_config()
+    return os.path.dirname(cfg_file)
 
 
 @task
@@ -233,10 +278,19 @@ def job_started(jobid, target_name):
            )).start()
 
 
-@task(iterable=['state'])
-def list_jobs(ctx, state,
+@task(iterable=['state'],
+      help={
+          'state': 'list jobs by state: active/inactive, started/stopped, all. Default is active.',
+          'project': 'list jobs belonging to the project of current working directory.',
+      })
+def list_jobs(ctx, state, project=False,
               created_after=None, created_before=None,
               updated_after=None, updated_before=None):
+    if project:
+        project = find_job_root()
+    else:
+        project = None
+
     if len(state) == 0:
         state = ['active']
 
@@ -256,7 +310,8 @@ def list_jobs(ctx, state,
             started = None
 
     import shotgun.database as db
-    res = db.find_jobs(ctx.VAULT, active=active, started=started,
+    res = db.find_jobs(ctx.VAULT, active=active, project=project,
+                       started=started,
                        created_after=created_after,
                        created_before=created_before,
                        updated_after=updated_after,
@@ -278,8 +333,7 @@ def load_config(ctx, config_file):
 
 def load_job_root_config(ctx):
     cfg_file = find_job_root_config()
-    cfg = read_config(cfg_file)
-    ctx.config.load_overrides(cfg, merge=True)
+    load_config(ctx, cfg_file)
     for tname, tattr in iteritems(ctx.targets):
         if 'host' not in tattr:
             tattr['host'] = tname

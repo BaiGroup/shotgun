@@ -36,13 +36,15 @@ JobInstance = namedtuple('Job',
                          ['id', 'active', 'started', 'updated_at', 'jobdir'])
 
 
-def find_jobs(db, active=None, started=None,
+def find_jobs(db, active=None, project=None, started=None,
               created_after=None, created_before=None,
               updated_after=None, updated_before=None):
     with session_from_db(db) as session:
         query = session.query(Job)
         if active is not None:
             query = query.filter_by(active=active)
+        if project is not None:
+            query = query.filter(Job.jobdir.startswith(project))
         if started is not None:
             query = query.filter_by(started=started)
         if created_after is not None:
