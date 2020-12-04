@@ -151,7 +151,12 @@ class RemoteAgent(object):
         hours = int(seconds/3600)
         minutes = math.ceil((seconds - hours*3600)/60)
         kwargs['time'] = '{:d}:{:02d}'.format(hours, minutes)
-        cmd = self.sched.submit_command(**kwargs)
+        extra_options = kwargs.pop('extra_options', ' ')
+        if extra_options is None:
+            extra_options = ' '
+        else:
+            extra_options = ' ' + extra_options + ' '
+        cmd = self.sched.submit_command(**kwargs).replace(' ', extra_options, 1)
         print('{} Submitting: {}'.format(str(self), cmd))
         result = self.conn.run('cd {} && {}'.format(job_dir, cmd))
         if result is not None and result.ok:
