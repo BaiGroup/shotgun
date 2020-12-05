@@ -96,13 +96,14 @@ def submit_command(job_script, nodes=1, cpus_per_node=1,
                    queue=None, account=None, name=None, constraint=None):
     options = ''
 
+    if mem_total is not None:
+        if mem_per_cpu is None:
+            mem_per_cpu = int(mem_total / cpus_per_node / nodes)
+        else:
+            print('Ignoring mem_total (overriden by mem_per_cpu).')
+
     if mem_per_cpu is not None:
         options += ' --mem-per-cpu={}'.format(mem_per_cpu)
-        if mem_total is None:
-            mem_total = int(mem_per_cpu) * cpus_per_node * nodes
-
-    if mem_total is not None:
-        options += ' --mem={}'.format(mem_total)
 
     if queue is not None:
         options += ' --partition {}'.format(queue)
