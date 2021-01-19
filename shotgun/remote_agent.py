@@ -125,7 +125,7 @@ class RemoteAgent(object):
         exclude_str = ' '.join('--exclude='+str(ex) for ex in exclude)
 
         host = self.attr['host']
-        cmd = 'rsync -rltDzP {} {}:{}/ {}/'
+        cmd = 'rsync -rltDz --partial {} {}:{}/ {}/'
         cmd = cmd.format(exclude_str, host, remote_dir, local_dir)
         print('{} Rsyncing: {}'.format(str(self), cmd))
         return subprocess.call(shlex.split(cmd), stdout=subprocess.PIPE)
@@ -139,7 +139,7 @@ class RemoteAgent(object):
             exclude_str = '--delete-excluded ' + exclude_str
 
         host = self.attr['host']
-        cmd = 'rsync -rltDzP --delete {} {}/ {}:{}/'
+        cmd = 'rsync -rltDz --partial --delete {} {}/ {}:{}/'
         cmd = cmd.format(exclude_str, local_dir, host, remote_dir)
         print('{} Rsyncing: {}'.format(str(self), cmd))
         return subprocess.call(shlex.split(cmd), stdout=subprocess.PIPE)
