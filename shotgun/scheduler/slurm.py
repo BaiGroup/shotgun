@@ -48,7 +48,10 @@ _QUERY_REASON_MAP = {
 def parse_query_output(stdout):
     info = {}
     for field in stdout.strip().replace('\n', ' ').split():
-        key, value = field.split('=', maxsplit=1)
+        try:
+            key, value = field.split('=', maxsplit=1)
+        except ValueError as e:
+            continue
         if key in _QUERY_MAP:
             if 'Time' in key:
                 value = time_in_seconds(value)
