@@ -9,7 +9,7 @@ import shotgun.database as db
 
 class Job(object):
     ACTIVE_STATE = ['queued', 'dependency_hold', 'user_hold', 'system_hold',
-                    'running']
+                    'running', 'suspended']
 
     def __init__(self, context, job_dir, jobid=None):
         self.context = context

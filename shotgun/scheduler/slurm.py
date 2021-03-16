@@ -31,8 +31,11 @@ _QUERY_STATE_MAP = {
     'PENDING': 'queued',
     'RUNNING': 'running',
     'COMPLETED': 'completed',
+    'FAILED': 'failed',
     'CANCELLED': 'canceled',
-    'TIMEOUT': 'killed'
+    'SUSPENDED': 'suspended',
+    'TIMEOUT': 'killed',
+    'OUT_OF_MEMORY': 'killed'
 }
 _QUERY_REASON_MAP = {
     'None': 'running|completed',
