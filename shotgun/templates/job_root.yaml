@@ -2,14 +2,14 @@ default_targets: [host1]
 download_excludes: ['.nfs*']
 upload_excludes: ['job.yaml', '.nfs*']
 delete_excluded: False
+local_asset_dir: ${home_dir}/bin
 targets:
   host1:
     job_root: /scratch/user/${project}
     job_script: pbs_host1.sh
-    asset_dir: /project/user/bin
-    # local_asset_dir: absence of this local entry disables asset transfers
+    # asset_dir: if absent the relative path from local_job_root to local_asset_dir will be used
+    local_asset_dir: []  # empty local_asset_dir disables asset transfers
   host2:
     job_root: /dtemp/user/${project}
     job_script: pbs_host2.sh
     asset_dir: /project/user/bin
-    local_asset_dir: ${home_dir}/bin

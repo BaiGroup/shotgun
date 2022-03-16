@@ -356,13 +356,21 @@ def load_config(ctx, config_file):
 
 def load_job_root_config(ctx):
     cfg_file = find_job_root_config()
+    local_job_root = os.path.dirname(cfg_file)
     load_config(ctx, cfg_file)
     for tname, tattr in iteritems(ctx.targets):
         if 'host' not in tattr:
             tattr['host'] = tname
+        if 'local_asset_dir' not in tattr and 'local_asset_dir' in ctx:
+            tattr['local_asset_dir'] = ctx.local_asset_dir
         if 'skip_pingback' not in tattr:
-            tattr['skip_pingback'] = False
-    return os.path.dirname(cfg_file)
+            tattr['skip_pingback'] = True
+
+        # The following must come after local_asset_dir is resolved
+        if 'asset_dir' not in tattr and 'local_asset_dir' in tattr:
+            rel_asset_dir = os.path.relpath(tattr['local_asset_dir'], local_job_root)
+            tattr['asset_dir'] = os.path.join(tattr['job_root'], rel_asset_dir)
+    return local_job_root
 
 
 @task
