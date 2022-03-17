@@ -8,6 +8,7 @@ import logging
 import math
 import queue
 import shlex
+from string import Template
 from shotgun import APP_NAME
 from shotgun.util import failable, is_number, is_sequence_except_str,\
     time_in_seconds
@@ -34,6 +35,9 @@ class Connection(object):
 
     def __init__(self, host):
         self.host = host
+
+    def __str__(self):
+        return '[{}]'.format(self.host)
 
     def close(self):
         pass
@@ -98,20 +102,20 @@ class RemoteAgent(object):
     @failable(UnexpectedExit)
     def cancel(self, job_qids):
         cmd = self.sched.cancel_command(job_qids)
-        print('{} Canceling: {}'.format(str(self), cmd))
-        return self.conn.run(cmd)
+        print('{} Canceling: '.format(str(self)), end='')
+        return self.run(cmd)
 
     @failable(UnexpectedExit)
     def hold(self, job_qids):
         cmd = self.sched.hold_command(job_qids)
-        print('{} Holding: {}'.format(str(self), cmd))
-        return self.conn.run(cmd)
+        print('{} Holding: '.format(str(self)), end='')
+        return self.run(cmd)
 
     @failable(UnexpectedExit)
     def query(self, job_qid, hide='out'):
         cmd = self.sched.query_command(job_qid)
-        print('{} Querying: {}'.format(str(self), cmd))
-        result = self.conn.run(cmd, hide=hide)
+        print('{} Querying: '.format(str(self)), end='')
+        result = self.run(cmd, hide=hide)
         if result.ok:
             job_info = self.sched.parse_query_output(result.stdout)
             for attr in self.sched.QUERY_ATTRIBUTES:
@@ -145,6 +149,19 @@ class RemoteAgent(object):
         return subprocess.call(shlex.split(cmd), stdout=subprocess.PIPE)
 
     @failable(UnexpectedExit)
+    def run(self, cmd, **kwargs):
+        if 'command_decorator' in self.attr:
+            if isinstance(self.attr['command_decorator'], str):
+                command_decorator = self.attr['command_decorator']
+            elif self.attr['command_decorator']:
+                command_decorator = ';'.join(self.attr['command_decorator'])
+            template = Template(command_decorator)
+            cmd = template.safe_substitute(command=cmd)
+
+        print(cmd)
+        return self.conn.run(cmd, **kwargs)
+
+    @failable(UnexpectedExit)
     def submit(self, job_dir, **kwargs):
         kwargs = self.with_submit_defaults(**kwargs)
         seconds = time_in_seconds(kwargs['time'])
@@ -157,8 +174,8 @@ class RemoteAgent(object):
         else:
             extra_options = ' ' + extra_options + ' '
         cmd = self.sched.submit_command(**kwargs).replace(' ', extra_options, 1)
-        print('{} Submitting: {}'.format(str(self), cmd))
-        result = self.conn.run('cd {} && {}'.format(job_dir, cmd))
+        print('{} Submitting: '.format(str(self)), end='')
+        result = self.run('cd {} && {}'.format(job_dir, cmd))
         if result is not None and result.ok:
             job_info = self.sched.parse_submit_output(result.stdout)
             result.job_qid = job_info['job_qid']
@@ -179,8 +196,8 @@ class RemoteAgent(object):
               .format(str(self), local_dir, remote_dir))
 
         cmd = 'mkdir -p {}'.format(remote_dir)
-        print('{} Make remote directory: {}'.format(str(self), cmd))
-        result = self.conn.run(cmd)
+        print('{} Make remote directory: '.format(str(self)), end='')
+        result = self.run(cmd)
 
         if result is not None and result.ok:
             return self.rsync_to_remote(local_dir, remote_dir, hide=hide,
@@ -189,8 +206,8 @@ class RemoteAgent(object):
     @failable(UnexpectedExit)
     def release(self, job_qids):
         cmd = self.sched.release_command(job_qids)
-        print('{} Releasing hold: {}'.format(str(self), cmd))
-        return self.conn.run(cmd)
+        print('{} Releasing hold: '.format(str(self)), end='')
+        return self.run(cmd)
 
     def with_submit_defaults(self, **kwargs):
         for key, val in iteritems(kwargs):
