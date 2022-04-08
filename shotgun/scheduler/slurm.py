@@ -38,7 +38,7 @@ _QUERY_STATE_MAP = {
     'OUT_OF_MEMORY': 'killed'
 }
 _QUERY_REASON_MAP = {
-    'None': 'running|completed',
+    'None': 'queued',
     'Resources': 'queued',
     'Priority': 'queued',
     'Dependency': 'dependency_hold',
