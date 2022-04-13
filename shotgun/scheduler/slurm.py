@@ -98,7 +98,8 @@ class SlurmParseQueryError(ShotgunError):
 
 
 def submit_command(job_script, nodes=1, cpus_per_node=1,
-                   mem_per_cpu=None, mem_total=None, time=24,
+                   mem_per_cpu=None, mem_total=None,
+                   gpus_per_node=None, time=24,
                    queue=None, account=None, name=None, constraint=None):
     options = ''
 
@@ -110,6 +111,9 @@ def submit_command(job_script, nodes=1, cpus_per_node=1,
 
     if mem_per_cpu is not None:
         options += ' --mem-per-cpu={}'.format(mem_per_cpu)
+
+    if gpus_per_node is not None:
+        options += ' --gpus-per-node={}'.format(gpus_per_node)
 
     if queue is not None:
         options += ' --partition {}'.format(queue)

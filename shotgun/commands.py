@@ -512,7 +512,7 @@ class ShotgunConfig(Config):
           'given as a relative path, it is with respect to the job directory.',
       })
 def submit(ctx, job_script=None, nodes=-1, cpus_per_node=-1,
-           mem_per_cpu=None, mem_total=None, time=None,
+           mem_per_cpu=None, mem_total=None, gpus_per_node=None, time=None,
            queue=None, account=None, name=None, targets=[], constraint=None,
            extra_options=None):
     '''Submit a job to one or more remote queuing systems.
@@ -563,6 +563,7 @@ def submit(ctx, job_script=None, nodes=-1, cpus_per_node=-1,
             res = tagent.submit(target_job_dir, job_script=job_script,
                                 nodes=nodes, cpus_per_node=cpus_per_node,
                                 mem_per_cpu=mem_per_cpu, mem_total=mem_total,
+                                gpus_per_node=gpus_per_node,
                                 time=time, queue=queue, account=account,
                                 name=name, constraint=constraint,
                                 extra_options=extra_options)
