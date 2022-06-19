@@ -1,5 +1,5 @@
 import binascii
-import collections
+import collections.abc
 from functools import wraps
 import logging
 from numbers import Number
@@ -45,7 +45,7 @@ def is_sequence_except_str(obj):
     if isinstance(obj, str):
         return False
     else:
-        return isinstance(obj, collections.Sequence)
+        return isinstance(obj, collections.abc.Sequence)
 
 
 def make_executable(f):
