@@ -366,10 +366,13 @@ def load_job_root_config(ctx):
         if 'skip_pingback' not in tattr:
             tattr['skip_pingback'] = True
 
-        # The following must come after local_asset_dir is resolved
-        if 'asset_dir' not in tattr and 'local_asset_dir' in tattr and 'job_root' in tattr:
-            rel_asset_dir = os.path.relpath(tattr['local_asset_dir'], local_job_root)
-            tattr['asset_dir'] = os.path.join(tattr['job_root'], rel_asset_dir)
+        if 'local_asset_dir' in tattr:
+            tattr['local_asset_dir'] = os.path.expandvars(tattr['local_asset_dir'])
+
+            # The following must come after local_asset_dir is resolved
+            if 'asset_dir' not in tattr and 'job_root' in tattr:
+                rel_asset_dir = os.path.relpath(tattr['local_asset_dir'], local_job_root)
+                tattr['asset_dir'] = os.path.join(tattr['job_root'], rel_asset_dir)
     return local_job_root
 
 
