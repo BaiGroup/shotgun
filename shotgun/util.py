@@ -71,7 +71,10 @@ def template_from_file(template_file):
 
 
 def time_in_seconds(time_str):
-    parts = time_str.split('-')
+    try:
+        parts = time_str.split('-')
+    except AttributeError:
+        parts = [str(time_str)]
 
     if len(parts) == 2:
         days = int(parts[0])
