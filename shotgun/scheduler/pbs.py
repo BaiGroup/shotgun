@@ -75,8 +75,6 @@ def submit_command(job_script, nodes=1, cpus_per_node=1,
 
     if mem_per_cpu is not None:
         options += ' -l pmem={}mb'.format(mem_per_cpu)
-        if mem_total is None:
-            mem_total = int(mem_per_cpu) * cpus_per_node * nodes
 
     if mem_total is not None:
         options += ' -l mem={}mb'.format(mem_total)

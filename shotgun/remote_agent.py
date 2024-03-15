@@ -7,6 +7,7 @@ from invoke.exceptions import UnexpectedExit
 import logging
 import math
 import queue
+import re
 import shlex
 from string import Template
 from shotgun import APP_NAME
@@ -105,6 +106,34 @@ class RemoteAgent(object):
         print('{} Canceling: '.format(str(self)), end='')
         return self.run(cmd)
 
+    def convert_size_to_MB(self, size_str):
+        regex = re.compile("^(?P<numbers>\d*)(?P<letters>\w*)$")
+        try:
+            (size, unit) = regex.search(size_str).groups()
+        except TypeError:
+            return size_str
+
+        if size:
+            size = int(size)
+        else:
+            raise ValueError('{} Incorrect memory specs: {}'.format(str(self), size_str))
+
+        if not unit:
+            return size
+        else:
+            unit = unit.upper()
+
+        if unit == 'TB' or unit == 'T':
+            size *= 1024**2
+        elif unit == 'GB' or unit == 'G':
+            size *= 1024
+        elif unit == 'KB' or unit == 'K':
+            size = math.ceil(size/1024)
+        elif unit == 'B':
+            size = math.ceil(size/1024**2)
+
+        return size
+
     @failable(UnexpectedExit)
     def hold(self, job_qids):
         cmd = self.sched.hold_command(job_qids)
@@ -161,6 +190,21 @@ class RemoteAgent(object):
         print(cmd)
         return self.conn.run(cmd, **kwargs)
 
+    def set_memory_default(self, **kwargs):
+        if kwargs['mem_per_cpu'] is not None:
+            kwargs['mem_per_cpu'] = self.convert_size_to_MB(kwargs['mem_per_cpu'])
+        if kwargs['mem_total'] is not None:
+            kwargs['mem_total'] = self.convert_size_to_MB(kwargs['mem_total'])
+            if kwargs['mem_per_cpu'] is None:
+                kwargs['mem_per_cpu'] = int(kwargs['mem_total'] / kwargs['cpus_per_node'] / kwargs['nodes'])
+            else:
+                print('Ignoring mem_total (overriden by mem_per_cpu).')
+                kwargs['mem_total'] = int(kwargs['mem_per_cpu']) * kwargs['cpus_per_node'] * kwargs['nodes']
+        elif kwargs['mem_per_cpu'] is not None:
+            kwargs['mem_total'] = int(kwargs['mem_per_cpu']) * kwargs['cpus_per_node'] * kwargs['nodes']
+
+        return kwargs
+
     @failable(UnexpectedExit)
     def submit(self, job_dir, **kwargs):
         kwargs = self.with_submit_defaults(**kwargs)
@@ -210,6 +254,8 @@ class RemoteAgent(object):
         return self.run(cmd)
 
     def with_submit_defaults(self, **kwargs):
+        kwargs = self.set_memory_default(**kwargs)
+
         for key, val in iteritems(kwargs):
             try:
                 if (val is None) or (is_number(val) and val < 0) \
@@ -217,4 +263,6 @@ class RemoteAgent(object):
                     kwargs[key] = self.attr[key]
             except KeyError:
                 pass
+
+        kwargs = self.set_memory_default(**kwargs)
         return kwargs
