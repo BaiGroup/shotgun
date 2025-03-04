@@ -135,3 +135,4 @@ def set_started(id, db):
     with session_from_db(db) as session:
         job = session.query(Job).get(id)
         job.started = True
+        job.active = True
