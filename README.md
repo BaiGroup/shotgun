@@ -1,10 +1,39 @@
 # Shotgun
 
-## Requirements
+Shotgun is a job management tool that streamlines file syncing and job
+submission to HPC systems. It submits the same job to multiple remote
+queuing systems (SLURM, PBS, LSF) at once — "shotgun" submission — and
+can keep only the first job that starts running, canceling the rest.
+
+## Quick start
+
+```bash
+pip install -e .
+pip install flask          # only needed for the pingback server
+
+shotgun init               # create ~/.shotgun.yaml + SQLite vault
+shotgun new-project        # create shotgun.yaml in the project root
+shotgun submit -c 8 -m 5200 -n 1 -t 24 -r bridges -q RM-shared -j ./sub.sh
+shotgun check-all -c -s    # check all jobs, cancel siblings, sync back
+```
+
+## Documentation
+
+- [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) — internal design and
+  data flows
+- [AGENTS.md](AGENTS.md) — codebase guide for AI agents and contributors
+- [TODO.md](TODO.md) — prioritized action items
+- User guide: <https://wiki.bai.group/meta/Shotgun_job_management_system>
+  (internal wiki) — setup, basic workflow, bundling/cycling jobs,
+  troubleshooting, HPC usage notes
+
+## Original design notes
+
+### Requirements
 
 Remote machine: should be minimum; Shell, Python?
 
-## Components
+### Components
 
 ### Command-Line Interface
 
